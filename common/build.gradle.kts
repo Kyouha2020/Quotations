@@ -17,7 +17,7 @@ kotlin {
         named("commonMain") {
             dependencies {
                 kotlin("reflect", "1.4.20")
-                api("org.jetbrains.kotlinx:kotlinx-datetime:0.1.0")
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.1.1")
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)

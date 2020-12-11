@@ -31,7 +31,7 @@ compose.desktop {
             version = "0.1.0"
             description = "Quotations"
             copyright = "© 2020 Kyouha. All rights reserved."
-            vendor = "Kyouha Inc"
+            vendor = "Kyouha"
 
             macOS {
                 iconFile.set(project.file("icon.icns"))
