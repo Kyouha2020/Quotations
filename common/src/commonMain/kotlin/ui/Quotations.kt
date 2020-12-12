@@ -64,11 +64,7 @@ fun Quotations(owner: QuotationOwner) {
                 GlobalScope.launch(Dispatchers.Default) {
                     isLoading = true
                     try {
-                        quotations += parseQuotations(
-                            "https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/${
-                                owner.name.toLowerCase().replace("\\s".toRegex(), "")
-                            }.txt"
-                        )
+                        quotations += parseQuotations(owner.name)
                     } catch (e: Exception) {
                         exception = e.toString()
                     }

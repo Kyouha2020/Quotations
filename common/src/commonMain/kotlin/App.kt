@@ -7,7 +7,7 @@ import data.Quotation
 
 expect fun isDarkTheme(): Boolean
 expect fun getPlatformName(): String
-expect fun parseQuotations(url: String): List<Quotation>
+expect fun parseQuotations(name: String): List<Quotation>
 
 @Composable
 fun QuotationsTheme(darkTheme: Boolean = isDarkTheme(), content: @Composable () -> Unit) {

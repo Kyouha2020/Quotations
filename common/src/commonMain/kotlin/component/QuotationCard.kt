@@ -86,7 +86,7 @@ fun QuotationCard(
                                 ) {
                                     Text(
                                         it,
-                                        Modifier.padding(horizontal = 4.dp),
+                                        Modifier.padding(8.dp, 2.dp),
                                         style = MaterialTheme.typography.caption
                                     )
                                 }
@@ -100,7 +100,7 @@ fun QuotationCard(
                                 ) {
                                     Text(
                                         it,
-                                        Modifier.padding(horizontal = 4.dp),
+                                        Modifier.padding(8.dp, 2.dp),
                                         style = MaterialTheme.typography.caption
                                     )
                                 }

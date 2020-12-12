@@ -2,14 +2,19 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import data.Quotation
 import java.net.URL
+import java.util.*
 
 actual fun getPlatformName(): String = Platform.Android
 
 @Composable
 actual fun isDarkTheme(): Boolean = isSystemInDarkTheme()
 
-actual fun parseQuotations(url: String): List<Quotation> {
-    val data = URL(url).readText()
+actual fun parseQuotations(name: String): List<Quotation> {
+    val data = URL(
+        "https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/${
+            name.toLowerCase(Locale.ROOT).replace("\\s".toRegex(), "")
+        }.txt"
+    ).readText()
     val quotations = mutableListOf<Quotation>()
     data.split("• ".toRegex()).forEach { block ->
         val lines = "• $block"
