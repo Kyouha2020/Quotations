@@ -73,12 +73,14 @@ fun QuotationCard(
                         )
                     }
                 }
-                if (quotation.tags.isNotEmpty()) {
-                    FlowRow {
+                Box(Modifier.padding(8.dp)) {
+                    FlowRow(
+                        mainAxisSpacing = 4.dp,
+                        crossAxisSpacing = 4.dp
+                    ) {
                         quotation.tags.forEach {
                             if (it.isNotBlank()) {
                                 Card(
-                                    Modifier.padding(4.dp),
                                     backgroundColor = MaterialTheme.colors.secondary,
                                     elevation = 0.dp
                                 ) {
@@ -93,7 +95,6 @@ fun QuotationCard(
                         quotation.topics.forEach {
                             if (it.isNotBlank()) {
                                 Card(
-                                    Modifier.padding(4.dp),
                                     backgroundColor = MaterialTheme.colors.primary,
                                     elevation = 0.dp
                                 ) {
