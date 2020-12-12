@@ -8,11 +8,7 @@ fun main() = Window(
     icon = getMyAppIcon()
 ) {
     QuotationsTheme {
-        Home(
-            onAvatarClick = {
-                quotations(it)
-            }
-        )
+        Home()
     }
 }
 

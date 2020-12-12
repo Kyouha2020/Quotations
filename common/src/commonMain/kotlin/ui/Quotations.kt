@@ -2,12 +2,15 @@ package ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumnForIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Https
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.runtime.*
@@ -15,35 +18,57 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import component.BottomStack
+import androidx.compose.ui.zIndex
+import component.GuidanceCard
 import component.LoadingScreen
 import component.QuotationCard
 import data.Quotation
+import data.QuotationGroup
 import data.QuotationOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import parseQuotationGroups
 import parseQuotations
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Quotations(owner: QuotationOwner) {
-    var exception by remember { mutableStateOf("") }
+    var exception by remember { mutableStateOf<Exception?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var quotationsVisible by remember { mutableStateOf(false) }
+    var selectedGroupIndex by remember { mutableStateOf<Int?>(null) }
+    val quotationGroups = remember { mutableStateListOf<QuotationGroup>() }
+    val quotations = remember { mutableStateListOf<Quotation>() }
+    val dates = remember { mutableStateListOf<String>() }
+    val showDateIndexes = remember { mutableStateListOf<Int>() }
 
-    @Composable
-    fun Header() {
+    Box(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(8.dp),
+            Modifier.fillMaxWidth()
+                .preferredHeight(56.dp)
+                .zIndex(4f)
+                .background(MaterialTheme.colors.surface.copy(alpha = ContentAlpha.high))
+                .padding(8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton({}) {
-                Icon(Icons.Outlined.Menu)
+            IconButton({
+                if (quotationsVisible) {
+                    exception = null
+                    quotationsVisible = false
+                    selectedGroupIndex = null
+                }
+            }) {
+                Icon(
+                    if (quotationsVisible) Icons.Outlined.ArrowBack
+                    else Icons.Outlined.Menu
+                )
             }
             Text(
-                text = owner.zhName,
+                text = "${owner.zhName}${
+                    if (selectedGroupIndex != null) ": ${quotationGroups[selectedGroupIndex!!].title}" else ""
+                }",
                 color = MaterialTheme.colors.onSurface,
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.h6
@@ -52,61 +77,76 @@ fun Quotations(owner: QuotationOwner) {
                 Icon(Icons.Outlined.Search)
             }
         }
-    }
-
-    @Composable
-    fun BottomPanel() {
-        BottomStack {
-            val quotations = remember { mutableStateListOf<Quotation>() }
-            val dates = remember { mutableStateListOf<String>() }
-            val showDateIndexes = remember { mutableStateListOf<Int>() }
+        Column {
             LaunchedEffect(owner) {
                 GlobalScope.launch(Dispatchers.Default) {
                     isLoading = true
                     try {
-                        quotations += parseQuotations(owner.name)
+                        quotationGroups += parseQuotationGroups(owner.name)
                     } catch (e: Exception) {
-                        exception = e.toString()
+                        exception = e
                     }
-                    quotations.sortByDescending { it.date }
                     isLoading = false
                 }
             }
-            LazyColumnForIndexed(quotations) { index, quotation ->
-                QuotationCard(quotation, showDateIndexes.contains(index))
-                if (!dates.contains(quotation.date)) {
-                    dates += quotation.date
-                    showDateIndexes += index
+            LaunchedEffect(selectedGroupIndex) {
+                val groupIndex = selectedGroupIndex
+                if (groupIndex != null) {
+                    GlobalScope.launch(Dispatchers.Default) {
+                        isLoading = true
+                        try {
+                            quotations.clear()
+                            quotations += parseQuotations(quotationGroups[groupIndex].url)
+                            quotations.sortBy { it.date }
+                        } catch (e: Exception) {
+                            exception = e
+                        }
+                        isLoading = false
+                    }
+                } else if (quotationGroups.isNotEmpty()) {
+                    isLoading = false
                 }
             }
-            LoadingScreen(isLoading)
-        }
-    }
-
-    Box(Modifier.fillMaxSize()) {
-        var snackbarVisible by remember { mutableStateOf(false) }
-        Column {
-            Header()
-            BottomPanel()
-        }
-        onCommit(exception) {
-            if (exception.isNotBlank()) {
-                snackbarVisible = true
-                GlobalScope.launch(Dispatchers.Default) {
-                    delay(2500L)
-                    snackbarVisible = false
+            AnimatedVisibility(
+                !quotationsVisible,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                LazyColumnForIndexed(
+                    quotationGroups,
+                    contentPadding = PaddingValues(top = 56.dp)
+                ) { index, group ->
+                    GuidanceCard(
+                        group.title,
+                        group.subtitle,
+                        Icons.Outlined.Https,
+                        onClick = {
+                            selectedGroupIndex = index
+                            quotationsVisible = true
+                        }
+                    )
                 }
             }
-        }
-        AnimatedVisibility(
-            visible = snackbarVisible,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            enter = slideInHorizontally(),
-            exit = fadeOut(),
-        ) {
-            Snackbar {
-                Text(exception)
+            AnimatedVisibility(
+                quotationsVisible,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                LazyColumnForIndexed(
+                    quotations,
+                    contentPadding = PaddingValues(top = 56.dp)
+                ) { index, quotation ->
+                    QuotationCard(quotation, showDateIndexes.contains(index))
+                    if (!dates.contains(quotation.date)) {
+                        dates += quotation.date
+                        showDateIndexes += index
+                    }
+                }
             }
+            LoadingScreen(
+                isLoading,
+                exception
+            )
         }
     }
 }

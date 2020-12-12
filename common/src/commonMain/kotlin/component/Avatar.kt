@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.preferredHeight
 import androidx.compose.foundation.layout.preferredSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
@@ -26,7 +27,8 @@ fun Avatar(
     onClick: () -> Unit = {}
 ) {
     Column(
-        modifier.clip(RoundedCornerShape(8.dp))
+        modifier.preferredHeight(88.dp)
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -36,7 +38,7 @@ fun Avatar(
             modifier = Modifier.preferredSize(48.dp)
                 .clip(RoundedCornerShape(50))
                 .border(
-                    2.dp,
+                    1.dp,
                     MaterialTheme.colors.onSurface.copy(0.12f),
                     RoundedCornerShape(50)
                 ),

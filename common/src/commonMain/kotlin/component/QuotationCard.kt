@@ -54,7 +54,7 @@ fun QuotationCard(
         Column(Modifier.fillMaxWidth()
             .padding(4.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.03f))
+            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.02f))
             .clickable { }
             .padding(4.dp)) {
             if (quotation.contents.isNotEmpty()) {

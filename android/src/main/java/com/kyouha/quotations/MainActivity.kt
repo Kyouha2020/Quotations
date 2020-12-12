@@ -1,7 +1,6 @@
 package com.kyouha.quotations
 
 import QuotationsTheme
-import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.setContent
@@ -13,13 +12,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             QuotationsTheme {
-                Home(
-                    onAvatarClick = {
-                        startActivity(Intent(this, QuotationsActivity::class.java).apply {
-                            putExtra("owner", it)
-                        })
-                    }
-                )
+                Home()
             }
         }
     }
