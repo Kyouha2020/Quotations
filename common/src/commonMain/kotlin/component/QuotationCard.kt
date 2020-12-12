@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import data.Quotation
 import kotlinx.datetime.LocalDate
 
+@OptIn(ExperimentalLayout::class)
 @Composable
 fun QuotationCard(
     quotation: Quotation,
@@ -73,7 +74,7 @@ fun QuotationCard(
                     }
                 }
                 if (quotation.tags.isNotEmpty()) {
-                    Row(Modifier.align(Alignment.End).padding(8.dp)) {
+                    FlowRow {
                         quotation.tags.forEach {
                             if (it.isNotBlank()) {
                                 Card(

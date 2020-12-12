@@ -11,22 +11,28 @@ actual fun isDarkTheme(): Boolean = isSystemInDarkTheme()
 actual fun parseQuotations(url: String): List<Quotation> {
     val data = URL(url).readText()
     val quotations = mutableListOf<Quotation>()
-    data.split("• ".toRegex()).forEach {
-        val lines = "• $it"
+    data.split("• ".toRegex()).forEach { block ->
+        val lines = "• $block"
         quotations += Quotation(
             "• (?<date>.*)".toRegex().find(lines)?.groupValues?.get(1) ?: "0000-00-00",
-            mutableMapOf<String, String>().also { map ->
+            mutableMapOf<String, String>().also { contents ->
                 "@(?<speaker>.*): (?<content>.*)".toRegex().findAll(lines).toMutableList().map {
-                    map += Pair(
+                    contents += Pair(
                         if (it.groupValues[1].isNotBlank()) "${it.groupValues[1]} " else "",
                         it.groupValues[2]
                     )
                 }
             },
-            "\\$ (?<tags>.*)".toRegex().find(lines)?.groupValues?.get(1)
-                ?.split(" ".toRegex()) ?: emptyList(),
-            "# (?<topics>.*)".toRegex().find(lines)?.groupValues?.get(1)
-                ?.split(" ".toRegex()) ?: emptyList()
+            mutableListOf<String>().also { tags ->
+                "\\$ (?<tags>.*)".toRegex().findAll(lines).toMutableList().map {
+                    tags += it.groupValues[1].split(" ".toRegex())
+                }
+            },
+            mutableListOf<String>().also { topics ->
+                "# (?<topics>.*)".toRegex().findAll(lines).toMutableList().map {
+                    topics += it.groupValues[1].split(" ".toRegex())
+                }
+            }
         )
     }
     quotations.removeAt(0)
