@@ -1,42 +1,36 @@
 package ui
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.ScrollableColumn
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.compose.foundation.lazy.LazyColumnForIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import component.BottomStack
 import component.LoadingScreen
 import component.QuotationCard
-import data.QuotationBlock
+import data.Quotation
 import data.QuotationOwner
-import fetchQuotationBlock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import parseQuotations
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Quotations(owner: QuotationOwner) {
-    val quotationBlocks = remember { mutableStateListOf<QuotationBlock>() }
-    var query by remember { mutableStateOf(TextFieldValue("")) }
-    var tagQuery by remember { mutableStateOf(TextFieldValue("")) }
     var exception by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
-    var searchBarVisible by remember { mutableStateOf(false) }
-    var snackbarVisible by remember { mutableStateOf(false) }
 
     @Composable
     fun Header() {
@@ -54,7 +48,7 @@ fun Quotations(owner: QuotationOwner) {
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.h6
             )
-            IconButton({ searchBarVisible = !searchBarVisible }) {
+            IconButton({}) {
                 Icon(Icons.Outlined.Search)
             }
         }
@@ -63,71 +57,42 @@ fun Quotations(owner: QuotationOwner) {
     @Composable
     fun BottomPanel() {
         BottomStack {
+            val quotations = remember { mutableStateListOf<Quotation>() }
+            val dates = remember { mutableStateListOf<String>() }
+            val showDateIndexes = remember { mutableStateListOf<Int>() }
             LaunchedEffect(owner) {
                 GlobalScope.launch(Dispatchers.Default) {
                     isLoading = true
-                    quotationBlocks.clear()
                     try {
-                        fetchQuotationBlock(
-                            "https://quotations.surge.sh/quotations/${
-                                owner.name.toLowerCase()
-                                    .replace("\\s".toRegex(), "")
-                            }/quotations.json"
-                        )?.let {
-                            quotationBlocks.addAll(it)
-                        }
+                        quotations += parseQuotations(
+                            "https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/${
+                                owner.name.toLowerCase().replace("\\s".toRegex(), "")
+                            }.txt"
+                        )
                     } catch (e: Exception) {
                         exception = e.toString()
                     }
-                    quotationBlocks.sortByDescending { it.date }
+                    quotations.sortByDescending { it.date }
                     isLoading = false
                 }
             }
-            LazyColumnFor(quotationBlocks) {
-                QuotationCard(
-                    it,
-                    query.text,
-                    tagQuery.text
-                )
+            LazyColumnForIndexed(quotations) { index, quotation ->
+                QuotationCard(quotation, showDateIndexes.contains(index))
+                if (!dates.contains(quotation.date)) {
+                    dates += quotation.date
+                    showDateIndexes += index
+                }
             }
             LoadingScreen(isLoading)
         }
     }
 
     Box(Modifier.fillMaxSize()) {
+        var snackbarVisible by remember { mutableStateOf(false) }
         Column {
             Header()
-            ScrollableColumn(
-                Modifier.preferredHeight(animate(if (searchBarVisible) 128.dp else 0.dp))
-                    .padding(8.dp)
-                    .alpha(animate(if (searchBarVisible) 1f else 0f))
-            ) {
-                OutlinedTextField(
-                    query,
-                    { query = it },
-                    Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search") },
-                    trailingIcon = {
-                        IconButton({ query = query.copy("") }) {
-                            Icon(Icons.Outlined.Close)
-                        }
-                    }
-                )
-                OutlinedTextField(
-                    tagQuery,
-                    { tagQuery = it },
-                    Modifier.fillMaxWidth(),
-                    placeholder = { Text("Filter by tag") },
-                    trailingIcon = {
-                        IconButton({ tagQuery = tagQuery.copy("") }) {
-                            Icon(Icons.Outlined.Close)
-                        }
-                    }
-                )
-            }
             BottomPanel()
         }
-
         onCommit(exception) {
             if (exception.isNotBlank()) {
                 snackbarVisible = true

@@ -1,7 +1,6 @@
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import com.beust.klaxon.Klaxon
-import data.QuotationBlock
+import data.Quotation
 import java.net.URL
 
 actual fun getPlatformName(): String = Platform.Android
@@ -9,6 +8,27 @@ actual fun getPlatformName(): String = Platform.Android
 @Composable
 actual fun isDarkTheme(): Boolean = isSystemInDarkTheme()
 
-actual fun fetchQuotationBlock(url: String): List<QuotationBlock>? {
-    return Klaxon().parseArray(URL(url).readText())
+actual fun parseQuotations(url: String): List<Quotation> {
+    val data = URL(url).readText()
+    val quotations = mutableListOf<Quotation>()
+    data.split("• ".toRegex()).forEach {
+        val lines = "• $it"
+        quotations += Quotation(
+            "• (?<date>.*)".toRegex().find(lines)?.groupValues?.get(1) ?: "0000-00-00",
+            mutableMapOf<String, String>().also { map ->
+                "@(?<speaker>.*): (?<content>.*)".toRegex().findAll(lines).toMutableList().map {
+                    map += Pair(
+                        if (it.groupValues[1].isNotBlank()) "${it.groupValues[1]} " else "",
+                        it.groupValues[2]
+                    )
+                }
+            },
+            "\\$ (?<tags>.*)".toRegex().find(lines)?.groupValues?.get(1)
+                ?.split(" ".toRegex()) ?: emptyList(),
+            "# (?<topics>.*)".toRegex().find(lines)?.groupValues?.get(1)
+                ?.split(" ".toRegex()) ?: emptyList()
+        )
+    }
+    quotations.removeAt(0)
+    return quotations
 }

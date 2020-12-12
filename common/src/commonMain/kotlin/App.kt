@@ -3,11 +3,11 @@ import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import data.QuotationBlock
+import data.Quotation
 
 expect fun isDarkTheme(): Boolean
 expect fun getPlatformName(): String
-expect fun fetchQuotationBlock(url: String): List<QuotationBlock>?
+expect fun parseQuotations(url: String): List<Quotation>
 
 @Composable
 fun QuotationsTheme(darkTheme: Boolean = isDarkTheme(), content: @Composable () -> Unit) {
