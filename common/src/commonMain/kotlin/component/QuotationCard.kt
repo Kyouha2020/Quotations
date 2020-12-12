@@ -108,7 +108,7 @@ fun QuotationCard(
                     }
                 }
             }
-            Divider(Modifier.padding(start = 12.dp, end = 4.dp, bottom = 4.dp))
+            Divider(Modifier.padding(start = 12.dp, end = 4.dp))
         }
     }
 }
