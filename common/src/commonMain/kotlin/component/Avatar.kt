@@ -1,5 +1,6 @@
 package component
 
+import androidx.compose.animation.animate
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 fun Avatar(
     image: ImageBitmap,
     name: String,
+    isSelected: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
@@ -39,7 +41,10 @@ fun Avatar(
                 .clip(RoundedCornerShape(50))
                 .border(
                     1.dp,
-                    MaterialTheme.colors.onSurface.copy(0.12f),
+                    animate(
+                        if (isSelected) MaterialTheme.colors.primary
+                        else MaterialTheme.colors.onSurface.copy(0.12f)
+                    ),
                     RoundedCornerShape(50)
                 ),
             contentScale = ContentScale.Crop

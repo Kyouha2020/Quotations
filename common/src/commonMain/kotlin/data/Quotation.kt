@@ -1,10 +1,15 @@
 package data
 
-data class Quotation(
-    val date: String,
-    val contents: Map<String, String>,
-    val tags: List<String>,
-    val topics: List<String>
+data class QuotationIndexes(
+    var block: Int = 0,
+    var group: Int? = null
+)
+
+data class QuotationBlock(
+    val name: String,
+    val zhName: String,
+    val description: String,
+    val groups: List<QuotationGroup>
 )
 
 data class QuotationGroup(
@@ -13,43 +18,17 @@ data class QuotationGroup(
     val url: String
 )
 
-data class QuotationOwner(
-    val name: String,
-    val zhName: String,
-    val description: String
+data class Quotation(
+    val date: String,
+    val contents: Map<String, String>,
+    val tags: List<String>,
+    val topics: List<String>
 )
 
-object QuotationOwners {
-    val owners = listOf(
-        QuotationOwner(
-            "Li Chunsheng",
-            "李春生",
-            "Math teacher"
-        ),
-        QuotationOwner(
-            "Yin Jianxia",
-            "殷建霞",
-            "Chinese teacher"
-        ),
-        QuotationOwner(
-            "Zhuang Changchun",
-            "庄长春",
-            "English teacher"
-        ),
-        QuotationOwner(
-            "Wu Jianrong",
-            "吴建荣",
-            "Physics teacher"
-        ),
-        QuotationOwner(
-            "Sun Yameng",
-            "孙雅萌",
-            "Biology teacher"
-        ),
-        QuotationOwner(
-            "Liu Xuemin",
-            "刘学民",
-            "Geography teacher"
-        )
-    )
+fun List<QuotationBlock>.block(indexes: QuotationIndexes): QuotationBlock? {
+    return if (size > indexes.block) this[indexes.block] else null
+}
+
+fun List<QuotationBlock>.group(indexes: QuotationIndexes): QuotationGroup? {
+    return indexes.group?.let { this.block(indexes)?.groups?.get(it) }
 }

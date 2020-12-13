@@ -1,14 +1,11 @@
 package ui
 
 import App
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumnForIndexed
-import androidx.compose.foundation.lazy.LazyRowFor
+import androidx.compose.foundation.lazy.LazyRowForIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -27,13 +24,11 @@ import component.Avatar
 import component.GuidanceCard
 import component.LoadingScreen
 import component.QuotationCard
-import data.Quotation
-import data.QuotationGroup
-import data.QuotationOwners
+import data.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import parseQuotationGroups
+import parseQuotationBlocks
 import parseQuotations
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -41,10 +36,9 @@ import parseQuotations
 fun Home() {
     var isLoading by remember { mutableStateOf(true) }
     var exception by remember { mutableStateOf<Exception?>(null) }
-    var selectedQuotation by remember { mutableStateOf(QuotationOwners.owners[0]) }
+    val blocks = remember { mutableStateListOf<QuotationBlock>() }
+    var indexes by remember { mutableStateOf(QuotationIndexes()) }
     var quotationsVisible by remember { mutableStateOf(false) }
-    var selectedGroupIndex by remember { mutableStateOf<Int?>(null) }
-    val quotationGroups = remember { mutableStateListOf<QuotationGroup>() }
     val quotations = remember { mutableStateListOf<Quotation>() }
     val dates = remember { mutableStateListOf<String>() }
     val showDateIndexes = remember { mutableStateListOf<Int>() }
@@ -63,7 +57,7 @@ fun Home() {
                 if (quotationsVisible) {
                     exception = null
                     quotationsVisible = false
-                    selectedGroupIndex = null
+                    indexes = indexes.copy(group = null)
                 }
             }) {
                 Icon(
@@ -72,8 +66,8 @@ fun Home() {
                 )
             }
             Text(
-                text = if (quotationsVisible) "${selectedQuotation.zhName}${
-                    if (selectedGroupIndex != null) ": ${quotationGroups[selectedGroupIndex!!].title}" else ""
+                text = if (quotationsVisible) "${blocks.block(indexes)?.zhName}${
+                    if (indexes.group != null) ": ${blocks.group(indexes)?.title}" else ""
                 }" else App.name,
                 color = MaterialTheme.colors.onSurface,
                 textAlign = TextAlign.Center,
@@ -83,34 +77,36 @@ fun Home() {
                 Icon(Icons.Outlined.Search)
             }
         }
-        LaunchedEffect(selectedQuotation) {
+        LaunchedEffect("") {
             GlobalScope.launch(Dispatchers.Default) {
                 isLoading = true
                 exception = null
                 try {
-                    quotationGroups.clear()
-                    quotationGroups += parseQuotationGroups(selectedQuotation.name)
+                    blocks.clear()
+                    blocks += parseQuotationBlocks()
                 } catch (e: Exception) {
+                    println(e)
                     exception = e
                 }
                 isLoading = false
             }
         }
-        LaunchedEffect(selectedGroupIndex) {
-            val groupIndex = selectedGroupIndex
-            if (groupIndex != null) {
+        LaunchedEffect(indexes.group) {
+            val group = blocks.group(indexes)
+            if (group != null) {
                 GlobalScope.launch(Dispatchers.Default) {
                     isLoading = true
                     try {
                         quotations.clear()
-                        quotations += parseQuotations(quotationGroups[groupIndex].url)
+                        quotations += parseQuotations(group.url)
                         quotations.sortBy { it.date }
                     } catch (e: Exception) {
+                        println(e)
                         exception = e
                     }
                     isLoading = false
                 }
-            } else if (quotationGroups.isNotEmpty()) {
+            } else if (blocks.isNotEmpty()) {
                 isLoading = false
             }
         }
@@ -119,19 +115,21 @@ fun Home() {
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            LazyColumnForIndexed(
-                quotationGroups,
-                contentPadding = PaddingValues(top = 144.dp)
-            ) { index, group ->
-                GuidanceCard(
-                    group.title,
-                    group.subtitle,
-                    Icons.Outlined.Https,
-                    onClick = {
-                        selectedGroupIndex = index
-                        quotationsVisible = true
-                    }
-                )
+            blocks.block(indexes)?.let {
+                LazyColumnForIndexed(
+                    it.groups,
+                    contentPadding = PaddingValues(top = 144.dp)
+                ) { index, group ->
+                    GuidanceCard(
+                        group.title,
+                        group.subtitle,
+                        Icons.Outlined.Https,
+                        onClick = {
+                            indexes = indexes.copy(group = index)
+                            quotationsVisible = true
+                        }
+                    )
+                }
             }
         }
         AnimatedVisibility(
@@ -141,7 +139,7 @@ fun Home() {
         ) {
             LazyColumnForIndexed(
                 quotations,
-                contentPadding = PaddingValues(top = 144.dp)
+                contentPadding = PaddingValues(top = 56.dp)
             ) { index, quotation ->
                 QuotationCard(quotation, showDateIndexes.contains(index))
                 if (!dates.contains(quotation.date)) {
@@ -150,19 +148,26 @@ fun Home() {
                 }
             }
         }
-        LazyRowFor(
-            QuotationOwners.owners,
-            contentPadding = PaddingValues(start = 8.dp, top = 56.dp, end = 8.dp)
-        ) {
-            Avatar(
-                ImageBitmap(100, 100, ImageBitmapConfig.Argb8888),
-                it.zhName,
-                onClick = { selectedQuotation = it }
-            )
-        }
         LoadingScreen(
             isLoading,
             exception
         )
+        AnimatedVisibility(
+            indexes.group == null,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            LazyRowForIndexed(
+                blocks,
+                contentPadding = PaddingValues(start = 8.dp, top = 56.dp, end = 8.dp)
+            ) { index, block ->
+                Avatar(
+                    ImageBitmap(100, 100, ImageBitmapConfig.Argb8888),
+                    block.zhName,
+                    indexes.block == index,
+                    onClick = { indexes = indexes.copy(block = index) }
+                )
+            }
+        }
     }
 }

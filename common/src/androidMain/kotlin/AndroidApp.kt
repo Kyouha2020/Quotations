@@ -1,38 +1,48 @@
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import data.Quotation
+import data.QuotationBlock
 import data.QuotationGroup
 import java.net.URL
-import java.util.*
 
 actual fun getPlatformName(): String = Platform.Android
 
 @Composable
 actual fun isDarkTheme(): Boolean = isSystemInDarkTheme()
 
-actual fun parseQuotationGroups(name: String): List<QuotationGroup> {
-    val quotationGroups = mutableListOf<QuotationGroup>()
-    URL(
-        "https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/${
-            name.toLowerCase(Locale.ROOT).replace("\\s".toRegex(), "")
-        }_index.txt"
-    ).readText().reader().readLines().forEach { group ->
-        "\"(?<title>.*)\", \"(?<subtitle>.*)\", \"(?<url>.*)\"".toRegex().findAll(group)
+actual fun parseQuotationBlocks(): List<QuotationBlock> {
+    val quotationBlocks = mutableListOf<QuotationBlock>()
+    val data =
+        URL("https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/index.txt").readText()
+    data.split("• ".toRegex()).forEach { block ->
+        val lines = "• $block"
+        val info = "• \"(?<name>.*)\", \"(?<zhName>.*)\", \"(?<description>.*)\"".toRegex()
+            .find(lines)?.groupValues
+        val groups = mutableListOf<QuotationGroup>()
+        "- \"(?<title>.*)\", \"(?<subtitle>.*)\", \"(?<url>.*)\"".toRegex().findAll(lines)
             .toMutableList().map {
-                quotationGroups += QuotationGroup(
+                groups += QuotationGroup(
                     it.groupValues[1],
                     it.groupValues[2],
-                    it.groupValues[3],
+                    it.groupValues[3]
                 )
             }
+        info?.let {
+            quotationBlocks += QuotationBlock(
+                it[1],
+                it[2],
+                it[3],
+                groups
+            )
+        }
     }
-    return quotationGroups
+    return quotationBlocks
 }
 
 actual fun parseQuotations(url: String): List<Quotation> {
+    val quotations = mutableListOf<Quotation>()
     val data = URL("https://codeberg.org/Kyouha/Quotations/raw/branch/main/data/$url.txt")
         .readText()
-    val quotations = mutableListOf<Quotation>()
     data.split("• ".toRegex()).forEach { block ->
         val lines = "• $block"
         quotations += Quotation(
